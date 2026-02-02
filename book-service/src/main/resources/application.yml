@@ -1,0 +1,76 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: book-service
+  datasource:
+    url: jdbc:h2:mem:bookdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  h2:
+    console:
+      enabled: false
+  profiles:
+    active: default
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+    healthcheck:
+      enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+  jpa:
+    show-sql: false
+  h2:
+    console:
+      enabled: false
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: https://eureka-server-dot-${GOOGLE_CLOUD_PROJECT}.appspot.com/eureka/
+    healthcheck:
+      enabled: false
+  instance:
+    hostname: book-service-dot-${GOOGLE_CLOUD_PROJECT}.appspot.com
+    non-secure-port: 80
+    secure-port: 443
+    prefer-ip-address: false

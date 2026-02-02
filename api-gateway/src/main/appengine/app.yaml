@@ -1,0 +1,9 @@
+runtime: java17
+service: default
+
+env_variables:
+  SPRING_PROFILES_ACTIVE: production
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 2

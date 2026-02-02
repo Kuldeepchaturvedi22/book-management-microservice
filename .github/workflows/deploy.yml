@@ -1,0 +1,142 @@
+name: Smart CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: book-management-cluster
+  GKE_ZONE: us-central1-a
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            eureka-server:
+              - 'eureka-server/**'
+            user-service:
+              - 'user-service/**'
+            book-service:
+              - 'book-service/**'
+            order-service:
+              - 'order-service/**'
+            api-gateway:
+              - 'api-gateway/**'
+            frontend:
+              - 'frontend/**'
+
+  build-and-push:
+    needs: changes
+    if: ${{ needs.changes.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.changes.outputs.services) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      - name: Build and Push Docker image
+        run: |
+          docker build -t gcr.io/$PROJECT_ID/${{ matrix.service }}:${GITHUB_SHA} ./${{ matrix.service }}
+          docker push gcr.io/$PROJECT_ID/${{ matrix.service }}:${GITHUB_SHA}
+
+  deploy:
+    needs: [changes, build-and-push]
+    if: ${{ needs.changes.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      - name: Get GKE credentials
+        run: gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
+
+      - name: Deploy Eureka Server
+        if: contains(fromJson(needs.changes.outputs.services), 'eureka-server')
+        run: |
+          kubectl apply -f k8s/eureka-server.yaml
+          kubectl set image deployment/eureka-server eureka-server=gcr.io/$PROJECT_ID/eureka-server:$GITHUB_SHA
+          kubectl rollout status deployment/eureka-server
+          echo "Waiting for Eureka to stabilize..."
+          sleep 30
+
+      - name: Deploy User Service
+        if: contains(fromJson(needs.changes.outputs.services), 'user-service')
+        run: |
+          kubectl apply -f k8s/user-service.yaml
+          kubectl set image deployment/user-service user-service=gcr.io/$PROJECT_ID/user-service:$GITHUB_SHA
+          kubectl rollout status deployment/user-service
+
+      - name: Deploy Book Service
+        if: contains(fromJson(needs.changes.outputs.services), 'book-service')
+        run: |
+          kubectl apply -f k8s/book-service.yaml
+          kubectl set image deployment/book-service book-service=gcr.io/$PROJECT_ID/book-service:$GITHUB_SHA
+          kubectl rollout status deployment/book-service
+
+      - name: Deploy Order Service
+        if: contains(fromJson(needs.changes.outputs.services), 'order-service')
+        run: |
+          kubectl apply -f k8s/order-service.yaml
+          kubectl set image deployment/order-service order-service=gcr.io/$PROJECT_ID/order-service:$GITHUB_SHA
+          kubectl rollout status deployment/order-service
+
+      - name: Wait for Backend Services
+        if: |
+          contains(fromJson(needs.changes.outputs.services), 'user-service') ||
+          contains(fromJson(needs.changes.outputs.services), 'book-service') ||
+          contains(fromJson(needs.changes.outputs.services), 'order-service')
+        run: |
+          echo "Waiting for backend services to stabilize..."
+          sleep 20
+
+      - name: Deploy API Gateway
+        if: contains(fromJson(needs.changes.outputs.services), 'api-gateway')
+        run: |
+          kubectl apply -f k8s/api-gateway.yaml
+          kubectl set image deployment/api-gateway api-gateway=gcr.io/$PROJECT_ID/api-gateway:$GITHUB_SHA
+          kubectl rollout status deployment/api-gateway
+          echo "Waiting for API Gateway to stabilize..."
+          sleep 10
+
+      - name: Deploy Frontend
+        if: contains(fromJson(needs.changes.outputs.services), 'frontend')
+        run: |
+          kubectl apply -f k8s/frontend.yaml
+          kubectl set image deployment/frontend frontend=gcr.io/$PROJECT_ID/frontend:$GITHUB_SHA
+          kubectl rollout status deployment/frontend
+
+      - name: Get Frontend URL
+        if: always()
+        run: |
+          echo "Attempting to get LoadBalancer IP..."
+          kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s
+          EXTERNAL_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || echo "not-found")
+          if [ "$EXTERNAL_IP" != "not-found" ]; then
+            echo "Frontend URL: http://$EXTERNAL_IP"
+          else
+            echo "Could not determine Frontend URL. It might still be provisioning."
+          fi
