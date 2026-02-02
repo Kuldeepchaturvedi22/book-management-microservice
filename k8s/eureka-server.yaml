@@ -13,13 +13,14 @@ spec:
         app: eureka-server
     spec:
       containers:
-      - name: eureka-server
-        image: gcr.io/PROJECT_ID/eureka-server:latest
-        ports:
-        - containerPort: 8761
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "kubernetes"
+        - name: eureka-server
+          # UPDATED: Points to Artifact Registry
+          image: us-central1-docker.pkg.dev/hello-481616/book-repo/eureka-server:latest
+          ports:
+            - containerPort: 8761
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "kubernetes"
 ---
 apiVersion: v1
 kind: Service
@@ -29,6 +30,6 @@ spec:
   selector:
     app: eureka-server
   ports:
-  - port: 8761
-    targetPort: 8761
+    - port: 8761
+      targetPort: 8761
   type: ClusterIP

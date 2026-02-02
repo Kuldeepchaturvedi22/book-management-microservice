@@ -13,13 +13,13 @@ spec:
         app: book-service
     spec:
       containers:
-      - name: book-service
-        image: gcr.io/PROJECT_ID/book-service:latest
-        ports:
-        - containerPort: 8081
-        env:
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-server:8761/eureka/"
+        - name: book-service
+          image: us-central1-docker.pkg.dev/hello-481616/book-repo/book-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
 ---
 apiVersion: v1
 kind: Service
@@ -29,6 +29,6 @@ spec:
   selector:
     app: book-service
   ports:
-  - port: 8081
-    targetPort: 8081
+    - port: 8081
+      targetPort: 8081
   type: ClusterIP

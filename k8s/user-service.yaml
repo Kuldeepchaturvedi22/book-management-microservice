@@ -13,13 +13,13 @@ spec:
         app: user-service
     spec:
       containers:
-      - name: user-service
-        image: gcr.io/PROJECT_ID/user-service:latest
-        ports:
-        - containerPort: 8082
-        env:
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-server:8761/eureka/"
+        - name: user-service
+          image: us-central1-docker.pkg.dev/hello-481616/book-repo/user-service:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
 ---
 apiVersion: v1
 kind: Service
@@ -29,6 +29,6 @@ spec:
   selector:
     app: user-service
   ports:
-  - port: 8082
-    targetPort: 8082
+    - port: 8082
+      targetPort: 8082
   type: ClusterIP

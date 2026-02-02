@@ -7,9 +7,10 @@ on:
     branches: [ main, master ]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Ensure this secret is set to 'hello-481616'
   GKE_CLUSTER: book-management-cluster
   GKE_ZONE: us-central1-a
+  REPO_NAME: book-repo
 
 jobs:
   changes:
@@ -51,12 +52,14 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
       - name: Build and Push Docker image
         run: |
-          docker build -t gcr.io/$PROJECT_ID/${{ matrix.service }}:${GITHUB_SHA} ./${{ matrix.service }}
-          docker push gcr.io/$PROJECT_ID/${{ matrix.service }}:${GITHUB_SHA}
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/${{ matrix.service }}
+          docker build -t $IMAGE_PATH:${GITHUB_SHA} ./${{ matrix.service }}
+          docker push $IMAGE_PATH:${GITHUB_SHA}
 
   deploy:
     needs: [changes, build-and-push]
@@ -77,8 +80,9 @@ jobs:
       - name: Deploy Eureka Server
         if: contains(fromJson(needs.changes.outputs.services), 'eureka-server')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/eureka-server
           kubectl apply -f k8s/eureka-server.yaml
-          kubectl set image deployment/eureka-server eureka-server=gcr.io/$PROJECT_ID/eureka-server:$GITHUB_SHA
+          kubectl set image deployment/eureka-server eureka-server=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/eureka-server
           echo "Waiting for Eureka to stabilize..."
           sleep 30
@@ -86,22 +90,25 @@ jobs:
       - name: Deploy User Service
         if: contains(fromJson(needs.changes.outputs.services), 'user-service')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/user-service
           kubectl apply -f k8s/user-service.yaml
-          kubectl set image deployment/user-service user-service=gcr.io/$PROJECT_ID/user-service:$GITHUB_SHA
+          kubectl set image deployment/user-service user-service=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/user-service
 
       - name: Deploy Book Service
         if: contains(fromJson(needs.changes.outputs.services), 'book-service')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/book-service
           kubectl apply -f k8s/book-service.yaml
-          kubectl set image deployment/book-service book-service=gcr.io/$PROJECT_ID/book-service:$GITHUB_SHA
+          kubectl set image deployment/book-service book-service=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/book-service
 
       - name: Deploy Order Service
         if: contains(fromJson(needs.changes.outputs.services), 'order-service')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/order-service
           kubectl apply -f k8s/order-service.yaml
-          kubectl set image deployment/order-service order-service=gcr.io/$PROJECT_ID/order-service:$GITHUB_SHA
+          kubectl set image deployment/order-service order-service=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/order-service
 
       - name: Wait for Backend Services
@@ -116,8 +123,9 @@ jobs:
       - name: Deploy API Gateway
         if: contains(fromJson(needs.changes.outputs.services), 'api-gateway')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/api-gateway
           kubectl apply -f k8s/api-gateway.yaml
-          kubectl set image deployment/api-gateway api-gateway=gcr.io/$PROJECT_ID/api-gateway:$GITHUB_SHA
+          kubectl set image deployment/api-gateway api-gateway=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/api-gateway
           echo "Waiting for API Gateway to stabilize..."
           sleep 10
@@ -125,8 +133,9 @@ jobs:
       - name: Deploy Frontend
         if: contains(fromJson(needs.changes.outputs.services), 'frontend')
         run: |
+          IMAGE_PATH=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend
           kubectl apply -f k8s/frontend.yaml
-          kubectl set image deployment/frontend frontend=gcr.io/$PROJECT_ID/frontend:$GITHUB_SHA
+          kubectl set image deployment/frontend frontend=$IMAGE_PATH:$GITHUB_SHA
           kubectl rollout status deployment/frontend
 
       - name: Get Frontend URL

@@ -13,13 +13,13 @@ spec:
         app: order-service
     spec:
       containers:
-      - name: order-service
-        image: gcr.io/PROJECT_ID/order-service:latest
-        ports:
-        - containerPort: 8083
-        env:
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://eureka-server:8761/eureka/"
+        - name: order-service
+          image: us-central1-docker.pkg.dev/hello-481616/book-repo/order-service:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
 ---
 apiVersion: v1
 kind: Service
@@ -29,6 +29,6 @@ spec:
   selector:
     app: order-service
   ports:
-  - port: 8083
-    targetPort: 8083
+    - port: 8083
+      targetPort: 8083
   type: ClusterIP

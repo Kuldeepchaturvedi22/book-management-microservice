@@ -13,19 +13,19 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: gcr.io/PROJECT_ID/frontend:latest
-        ports:
-        - containerPort: 80
+        - name: frontend
+          image: us-central1-docker.pkg.dev/hello-481616/book-repo/frontend:latest
+          ports:
+            - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend
 spec:
+  type: LoadBalancer
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 80
-  type: LoadBalancer
+    - port: 80
+      targetPort: 80
