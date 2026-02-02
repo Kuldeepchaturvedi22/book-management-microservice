@@ -22,19 +22,25 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter
         with:
-          filters: |
-            eureka-server:
-              - 'eureka-server/**'
-            user-service:
-              - 'user-service/**'
-            book-service:
-              - 'book-service/**'
-            order-service:
-              - 'order-service/**'
-            api-gateway:
-              - 'api-gateway/**'
-            frontend:
-              - 'frontend/**'
+            filters: |
+              eureka-server:
+                - 'eureka-server/**'
+                - 'k8s/eureka-server.yaml' # <--- ADD THIS
+              user-service:
+                - 'user-service/**'
+                - 'k8s/user-service.yaml' # <--- ADD THIS
+              book-service:
+                - 'book-service/**'
+                - 'k8s/book-service.yaml' # <--- ADD THIS
+              order-service:
+                - 'order-service/**'
+                - 'k8s/order-service.yaml' # <--- ADD THIS
+              api-gateway:
+                - 'api-gateway/**'
+                - 'k8s/api-gateway.yaml' # <--- ADD THIS
+              frontend:
+                - 'frontend/**'
+                - 'k8s/frontend.yaml' # <--- ADD THIS
 
   build-and-push:
     needs: changes
