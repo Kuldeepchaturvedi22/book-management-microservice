@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Ensure this secret is set to 'hello-481616'
   GKE_CLUSTER: book-management-cluster
-  GKE_ZONE: us-central1-a
+  GKE_ZONE: us-central1
   REPO_NAME: book-repo
 
 jobs:
