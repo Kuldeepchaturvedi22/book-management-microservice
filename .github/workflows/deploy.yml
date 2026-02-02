@@ -5,9 +5,10 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch: # <--- ADDS A BUTTON IN GITHUB UI
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Ensure this secret is set to 'hello-481616'
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: book-management-cluster
   GKE_ZONE: us-central1
   REPO_NAME: book-repo
@@ -25,22 +26,22 @@ jobs:
             filters: |
               eureka-server:
                 - 'eureka-server/**'
-                - 'k8s/eureka-server.yaml' # <--- ADD THIS
+                - 'k8s/eureka-server.yaml'
               user-service:
                 - 'user-service/**'
-                - 'k8s/user-service.yaml' # <--- ADD THIS
+                - 'k8s/user-service.yaml'
               book-service:
                 - 'book-service/**'
-                - 'k8s/book-service.yaml' # <--- ADD THIS
+                - 'k8s/book-service.yaml'
               order-service:
                 - 'order-service/**'
-                - 'k8s/order-service.yaml' # <--- ADD THIS
+                - 'k8s/order-service.yaml'
               api-gateway:
                 - 'api-gateway/**'
-                - 'k8s/api-gateway.yaml' # <--- ADD THIS
+                - 'k8s/api-gateway.yaml'
               frontend:
                 - 'frontend/**'
-                - 'k8s/frontend.yaml' # <--- ADD THIS
+                - 'k8s/frontend.yaml'
 
   build-and-push:
     needs: changes
@@ -80,6 +81,9 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
       - name: Get GKE credentials
         run: gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
 
