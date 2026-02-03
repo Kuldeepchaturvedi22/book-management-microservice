@@ -14,10 +14,16 @@ spec:
     spec:
       containers:
         - name: eureka-server
-          # UPDATED: Points to Artifact Registry
           image: us-central1-docker.pkg.dev/hello-481616/book-repo/eureka-server:latest
           ports:
             - containerPort: 8761
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "kubernetes"
@@ -33,5 +39,3 @@ spec:
     - port: 8761
       targetPort: 8761
   type: ClusterIP
-
-  # Triggering deployment for GKE check 2

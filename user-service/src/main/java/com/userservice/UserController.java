@@ -26,14 +26,15 @@ public class UserController {
         User savedUser = userRepository.save(user);
         String token = jwtUtil.generateToken(savedUser);
         
+        Map<String, Object> userDetails = new HashMap<>();
+        userDetails.put("id", savedUser.getId());
+        userDetails.put("name", savedUser.getName());
+        userDetails.put("email", savedUser.getEmail());
+        userDetails.put("role", savedUser.getRole());
+
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
-        response.put("user", Map.of(
-            "id", savedUser.getId(),
-            "name", savedUser.getName(),
-            "email", savedUser.getEmail(),
-            "role", savedUser.getRole()
-        ));
+        response.put("user", userDetails);
         return ResponseEntity.ok(response);
     }
     
@@ -50,14 +51,15 @@ public class UserController {
         User user = userOpt.get();
         String token = jwtUtil.generateToken(user);
         
+        Map<String, Object> userDetails = new HashMap<>();
+        userDetails.put("id", user.getId());
+        userDetails.put("name", user.getName());
+        userDetails.put("email", user.getEmail());
+        userDetails.put("role", user.getRole());
+
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
-        response.put("user", Map.of(
-            "id", user.getId(),
-            "name", user.getName(),
-            "email", user.getEmail(),
-            "role", user.getRole()
-        ));
+        response.put("user", userDetails);
         return ResponseEntity.ok(response);
     }
     
@@ -81,14 +83,15 @@ public class UserController {
             String email = jwtUtil.extractEmail(token);
             Optional<User> user = userRepository.findByEmail(email);
             if (user.isPresent()) {
+                Map<String, Object> userDetails = new HashMap<>();
+                userDetails.put("id", user.get().getId());
+                userDetails.put("name", user.get().getName());
+                userDetails.put("email", user.get().getEmail());
+                userDetails.put("role", user.get().getRole());
+
                 return ResponseEntity.ok(Map.of(
                     "valid", true,
-                    "user", Map.of(
-                        "id", user.get().getId(),
-                        "name", user.get().getName(),
-                        "email", user.get().getEmail(),
-                        "role", user.get().getRole()
-                    )
+                    "user", userDetails
                 ));
             }
         }

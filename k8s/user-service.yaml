@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: user-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: user-service
@@ -17,6 +17,18 @@ spec:
           image: us-central1-docker.pkg.dev/hello-481616/book-repo/user-service:latest
           ports:
             - containerPort: 8082
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "600Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1200Mi"
+          startupProbe:
+            tcpSocket: # Changed from httpGet to tcpSocket
+              port: 8082
+            failureThreshold: 30
+            periodSeconds: 10
           env:
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: "http://eureka-server:8761/eureka/"
